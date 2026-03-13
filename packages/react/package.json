@@ -1,0 +1,44 @@
+{
+  "name": "@switchbox/react",
+  "version": "0.1.0",
+  "description": "React hooks and components for Switchbox feature flags.",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "license": "MIT",
+  "keywords": [
+    "feature-flags",
+    "react",
+    "hooks",
+    "switchbox"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "lint": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "react": ">=17.0.0",
+    "switchbox-js": ">=0.1.0"
+  },
+  "devDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "switchbox-js": "workspace:*",
+    "@testing-library/react": "^16.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0"
+  }
+}
