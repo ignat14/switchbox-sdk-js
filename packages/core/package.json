@@ -1,6 +1,6 @@
 {
   "name": "switchbox-js",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Feature flag SDK for the browser. Zero dependencies.",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
