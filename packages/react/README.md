@@ -17,7 +17,7 @@ import { createClient } from 'switchbox-js';
 import { SwitchboxProvider } from '@switchbox/react';
 
 const client = await createClient({
-  cdnUrl: 'https://cdn.switchbox.dev/<sdk_key>/flags.json',
+  sdkKey: '<your-sdk-key>',
 });
 
 function App() {

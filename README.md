@@ -15,7 +15,7 @@ Feature flag SDKs for the browser. Zero dependencies.
 import { createClient } from 'switchbox-js';
 
 const client = await createClient({
-  cdnUrl: 'https://cdn.switchbox.dev/<sdk_key>/flags.json',
+  sdkKey: '<your-sdk-key>',
 });
 
 if (await client.enabled('new_checkout', { user_id: '42' })) {
@@ -32,7 +32,7 @@ import { SwitchboxProvider, useFlag, Feature } from '@switchbox/react';
 import { createClient } from 'switchbox-js';
 
 // Initialize once
-const client = await createClient({ cdnUrl: '...' });
+const client = await createClient({ sdkKey: '<your-sdk-key>' });
 
 // Wrap your app
 function App() {
@@ -65,7 +65,7 @@ Switchbox doesn't track flag evaluations. Wire into your own analytics:
 
 ```js
 const client = await createClient({
-  cdnUrl: '...',
+  sdkKey: '<your-sdk-key>',
   onEvaluation: (flagKey, result, user) => {
     analytics.track('flag_evaluated', { flag: flagKey, result });
   },

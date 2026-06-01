@@ -36,7 +36,7 @@ beforeEach(() => {
 describe('Client', () => {
   it('enabled returns false for nonexistent flag', async () => {
     globalThis.fetch = mockFetch(sampleConfig);
-    const client = new Client({ cdnUrl: 'https://cdn.test/flags.json' });
+    const client = new Client({ sdkKey: 'test-key' });
     await client.init();
     expect(await client.enabled('nonexistent')).toBe(false);
     client.destroy();
@@ -44,7 +44,7 @@ describe('Client', () => {
 
   it('getValue returns default for nonexistent flag', async () => {
     globalThis.fetch = mockFetch(sampleConfig);
-    const client = new Client({ cdnUrl: 'https://cdn.test/flags.json' });
+    const client = new Client({ sdkKey: 'test-key' });
     await client.init();
     expect(await client.getValue('nonexistent', undefined, 'fallback')).toBe('fallback');
     client.destroy();
@@ -52,7 +52,7 @@ describe('Client', () => {
 
   it('works with mocked fetch response', async () => {
     globalThis.fetch = mockFetch(sampleConfig);
-    const client = new Client({ cdnUrl: 'https://cdn.test/flags.json' });
+    const client = new Client({ sdkKey: 'test-key' });
     await client.init();
     expect(await client.enabled('new_dashboard', { user_id: '1' })).toBe(true);
     expect(await client.getValue('theme', { user_id: '1' })).toBe('dark');
@@ -63,7 +63,7 @@ describe('Client', () => {
     const onError = vi.fn();
     globalThis.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
     const client = new Client({
-      cdnUrl: 'https://cdn.test/flags.json',
+      sdkKey: 'test-key',
       onError,
     });
     await client.init();
@@ -76,7 +76,7 @@ describe('Client', () => {
     globalThis.fetch = mockFetch(sampleConfig);
     const onEvaluation = vi.fn();
     const client = new Client({
-      cdnUrl: 'https://cdn.test/flags.json',
+      sdkKey: 'test-key',
       onEvaluation,
     });
     await client.init();
@@ -96,7 +96,7 @@ describe('Client', () => {
     globalThis.fetch = mockFetch(sampleConfig);
     const clearIntervalSpy = vi.spyOn(globalThis, 'clearInterval');
     const client = new Client({
-      cdnUrl: 'https://cdn.test/flags.json',
+      sdkKey: 'test-key',
       pollInterval: 1,
     });
     await client.init();

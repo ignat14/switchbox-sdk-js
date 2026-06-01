@@ -3,6 +3,8 @@ import { evaluate } from './evaluator';
 import { SyncWorker } from './sync';
 import type { SwitchboxOptions, UserContext } from './types';
 
+const DEFAULT_CDN_BASE_URL = 'https://cdn.switchbox.dev';
+
 export class Client {
   private cache: FlagCache;
   private sync: SyncWorker;
@@ -11,8 +13,10 @@ export class Client {
   constructor(options: SwitchboxOptions) {
     this.cache = new FlagCache();
     this.onEvaluation = options.onEvaluation;
+    const base = options.cdnBaseUrl ?? DEFAULT_CDN_BASE_URL;
+    const cdnUrl = `${base}/${options.sdkKey}/flags.json`;
     this.sync = new SyncWorker(
-      options.cdnUrl,
+      cdnUrl,
       this.cache,
       options.pollInterval ?? 30,
       options.onError,

@@ -16,7 +16,7 @@ npm install switchbox-js
 import { createClient } from 'switchbox-js';
 
 const client = await createClient({
-  cdnUrl: 'https://cdn.switchbox.dev/<sdk_key>/flags.json',
+  sdkKey: '<your-sdk-key>',
 });
 
 // Boolean flag
@@ -38,7 +38,8 @@ client.destroy();
 
 ```js
 const client = await createClient({
-  cdnUrl: 'https://cdn.switchbox.dev/<sdk_key>/flags.json',
+  sdkKey: '<your-sdk-key>',
+  cdnBaseUrl: 'https://cdn.switchbox.dev',  // override for self-hosting (default shown)
   pollInterval: 30,  // seconds (default: 30)
   onError: (error) => console.error(error),
   onEvaluation: (flagKey, result, user) => {

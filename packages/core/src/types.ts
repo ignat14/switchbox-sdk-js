@@ -31,7 +31,10 @@ export interface UserContext {
 }
 
 export interface SwitchboxOptions {
-  cdnUrl: string;
+  /** Per-environment SDK key from the dashboard. Used to build the CDN URL. */
+  sdkKey: string;
+  /** Override the CDN origin. Defaults to https://cdn.switchbox.dev. */
+  cdnBaseUrl?: string;
   pollInterval?: number;
   onError?: (error: Error) => void;
   onEvaluation?: (flagKey: string, result: any, user?: UserContext) => void;
