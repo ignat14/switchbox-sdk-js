@@ -1,10 +1,10 @@
 import { createContext } from 'react';
-import type { Client } from 'switchbox-js';
+import type { Switchbox } from 'switchbox-js';
 
-export const SwitchboxContext = createContext<Client | null>(null);
+export const SwitchboxContext = createContext<Switchbox | null>(null);
 
 interface SwitchboxProviderProps {
-  client: Client;
+  client: Switchbox;
   children: React.ReactNode;
 }
 

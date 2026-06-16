@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Client } from '../src/client';
+import { Switchbox } from '../src/client';
 import type { FlagConfig } from '../src/types';
 
 const sampleConfig: FlagConfig = {
@@ -33,10 +33,10 @@ beforeEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('Client', () => {
+describe('Switchbox', () => {
   it('enabled returns false for nonexistent flag', async () => {
     globalThis.fetch = mockFetch(sampleConfig);
-    const client = new Client({ sdkKey: 'test-key' });
+    const client = new Switchbox({ sdkKey: 'test-key' });
     await client.init();
     expect(await client.enabled('nonexistent')).toBe(false);
     client.destroy();
@@ -44,7 +44,7 @@ describe('Client', () => {
 
   it('getValue returns default for nonexistent flag', async () => {
     globalThis.fetch = mockFetch(sampleConfig);
-    const client = new Client({ sdkKey: 'test-key' });
+    const client = new Switchbox({ sdkKey: 'test-key' });
     await client.init();
     expect(await client.getValue('nonexistent', undefined, 'fallback')).toBe('fallback');
     client.destroy();
@@ -52,7 +52,7 @@ describe('Client', () => {
 
   it('works with mocked fetch response', async () => {
     globalThis.fetch = mockFetch(sampleConfig);
-    const client = new Client({ sdkKey: 'test-key' });
+    const client = new Switchbox({ sdkKey: 'test-key' });
     await client.init();
     expect(await client.enabled('new_dashboard', { user_id: '1' })).toBe(true);
     expect(await client.getValue('theme', { user_id: '1' })).toBe('dark');
@@ -62,7 +62,7 @@ describe('Client', () => {
   it('handles fetch failure gracefully', async () => {
     const onError = vi.fn();
     globalThis.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
-    const client = new Client({
+    const client = new Switchbox({
       sdkKey: 'test-key',
       onError,
     });
@@ -75,7 +75,7 @@ describe('Client', () => {
   it('onEvaluation callback fires on every evaluation', async () => {
     globalThis.fetch = mockFetch(sampleConfig);
     const onEvaluation = vi.fn();
-    const client = new Client({
+    const client = new Switchbox({
       sdkKey: 'test-key',
       onEvaluation,
     });
@@ -94,7 +94,7 @@ describe('Client', () => {
 
   it('onConfigChange fires when a config version arrives (SEC-3)', async () => {
     globalThis.fetch = mockFetch(sampleConfig);
-    const client = new Client({ sdkKey: 'test-key' });
+    const client = new Switchbox({ sdkKey: 'test-key' });
     const listener = vi.fn();
     client.onConfigChange(listener);
     await client.init(); // first config load → notify subscribers
@@ -104,7 +104,7 @@ describe('Client', () => {
 
   it('onConfigChange unsubscribe stops notifications', async () => {
     globalThis.fetch = mockFetch(sampleConfig);
-    const client = new Client({ sdkKey: 'test-key' });
+    const client = new Switchbox({ sdkKey: 'test-key' });
     const listener = vi.fn();
     const off = client.onConfigChange(listener);
     off();
@@ -116,7 +116,7 @@ describe('Client', () => {
   it('destroy stops polling', async () => {
     globalThis.fetch = mockFetch(sampleConfig);
     const clearIntervalSpy = vi.spyOn(globalThis, 'clearInterval');
-    const client = new Client({
+    const client = new Switchbox({
       sdkKey: 'test-key',
       pollInterval: 1,
     });

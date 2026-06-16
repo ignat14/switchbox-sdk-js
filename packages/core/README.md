@@ -13,9 +13,9 @@ npm install switchbox-js
 ## Usage
 
 ```js
-import { createClient } from 'switchbox-js';
+import { Switchbox } from 'switchbox-js';
 
-const client = await createClient({
+const client = await Switchbox.create({
   sdkKey: '<your-sdk-key>',
 });
 
@@ -37,7 +37,7 @@ client.destroy();
 ## Options
 
 ```js
-const client = await createClient({
+const client = await Switchbox.create({
   sdkKey: '<your-sdk-key>',
   cdnBaseUrl: 'https://cdn.switchbox.dev',  // override for self-hosting (default shown)
   pollInterval: 30,  // seconds (default: 30)

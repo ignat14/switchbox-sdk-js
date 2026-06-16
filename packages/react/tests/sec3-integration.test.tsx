@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, waitFor, cleanup } from '@testing-library/react';
 import React from 'react';
-// Import the REAL core Client (from source) — not a mock — so this exercises the
+// Import the REAL core Switchbox (from source) — not a mock — so this exercises the
 // full SEC-3 path end to end: SyncWorker polls → version changes → onUpdate →
-// Client.onConfigChange listeners → useFlag/useValue re-evaluate → re-render.
-import { Client } from '../../core/src/client';
+// Switchbox.onConfigChange listeners → useFlag/useValue re-evaluate → re-render.
+import { Switchbox } from '../../core/src/client';
 import { SwitchboxProvider } from '../src/provider';
 import { useFlag, useValue } from '../src/hooks';
 
@@ -51,7 +51,7 @@ describe('SEC-3 — playground React page picks up config changes live', () => {
     );
 
     // Real client, fast poll so the test stays quick (50ms instead of 30s).
-    const client = new Client({ sdkKey: 'test-key', pollInterval: 0.05 });
+    const client = new Switchbox({ sdkKey: 'test-key', pollInterval: 0.05 });
     await client.init(); // loads v1
 
     const renders = { count: 0 };
@@ -91,7 +91,7 @@ describe('SEC-3 — playground React page picks up config changes live', () => {
     globalThis.fetch = vi.fn().mockImplementation(() =>
       Promise.resolve({ ok: true, json: () => Promise.resolve(served) }),
     );
-    const client = new Client({ sdkKey: 'test-key', pollInterval: 0.05 });
+    const client = new Switchbox({ sdkKey: 'test-key', pollInterval: 0.05 });
     await client.init();
 
     render(

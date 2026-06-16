@@ -1,8 +1,8 @@
 import { useContext, useState, useEffect } from 'react';
 import { SwitchboxContext } from './provider';
-import type { Client, UserContext } from 'switchbox-js';
+import type { Switchbox, UserContext } from 'switchbox-js';
 
-export function useClient(): Client {
+export function useClient(): Switchbox {
   const client = useContext(SwitchboxContext);
   if (!client) {
     throw new Error('useClient must be used within a <SwitchboxProvider>');

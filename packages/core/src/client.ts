@@ -5,11 +5,26 @@ import type { SwitchboxOptions, UserContext } from './types';
 
 const DEFAULT_CDN_BASE_URL = 'https://cdn.switchbox.dev';
 
-export class Client {
+export class Switchbox {
   private cache: FlagCache;
   private sync: SyncWorker;
   private onEvaluation?: SwitchboxOptions['onEvaluation'];
   private listeners = new Set<() => void>();
+
+  /**
+   * Create a client and wait for the first config fetch in one call — the
+   * recommended entry point:
+   *
+   *   const sb = await Switchbox.create({ sdkKey: '...' });
+   *
+   * Use `new Switchbox(options)` + `await sb.init()` directly only when you
+   * need to construct before awaiting.
+   */
+  static async create(options: SwitchboxOptions): Promise<Switchbox> {
+    const client = new Switchbox(options);
+    await client.init();
+    return client;
+  }
 
   constructor(options: SwitchboxOptions) {
     this.cache = new FlagCache();
@@ -89,12 +104,4 @@ export class Client {
     this.sync.stop();
     this.listeners.clear();
   }
-}
-
-export async function createClient(
-  options: SwitchboxOptions,
-): Promise<Client> {
-  const client = new Client(options);
-  await client.init();
-  return client;
 }

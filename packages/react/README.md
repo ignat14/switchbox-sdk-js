@@ -13,10 +13,10 @@ npm install switchbox-js @switchbox/react
 ## Setup
 
 ```tsx
-import { createClient } from 'switchbox-js';
+import { Switchbox } from 'switchbox-js';
 import { SwitchboxProvider } from '@switchbox/react';
 
-const client = await createClient({
+const client = await Switchbox.create({
   sdkKey: '<your-sdk-key>',
 });
 
@@ -60,7 +60,7 @@ import { useClient } from '@switchbox/react';
 
 function Advanced() {
   const client = useClient();
-  // Access the underlying switchbox-js Client directly
+  // Access the underlying switchbox-js client directly
 }
 ```
 

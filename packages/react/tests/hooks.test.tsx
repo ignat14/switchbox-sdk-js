@@ -3,9 +3,9 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import React from 'react';
 import { SwitchboxProvider } from '../src/provider';
 import { useFlag, useValue, useClient } from '../src/hooks';
-import type { Client } from 'switchbox-js';
+import type { Switchbox } from 'switchbox-js';
 
-function createMockClient(overrides: Partial<Client> = {}): Client {
+function createMockClient(overrides: Partial<Switchbox> = {}): Switchbox {
   return {
     init: vi.fn().mockResolvedValue(undefined),
     enabled: vi.fn().mockResolvedValue(false),
@@ -14,10 +14,10 @@ function createMockClient(overrides: Partial<Client> = {}): Client {
     onConfigChange: vi.fn().mockReturnValue(() => {}),
     destroy: vi.fn(),
     ...overrides,
-  } as unknown as Client;
+  } as unknown as Switchbox;
 }
 
-function createWrapper(client: Client) {
+function createWrapper(client: Switchbox) {
   return function Wrapper({ children }: { children: React.ReactNode }) {
     return (
       <SwitchboxProvider client={client}>{children}</SwitchboxProvider>
