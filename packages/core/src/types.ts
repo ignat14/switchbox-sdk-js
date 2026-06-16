@@ -11,12 +11,21 @@ export interface Rule {
   value: any;
 }
 
+/**
+ * An AND-group of conditions. Groups are OR'd by the evaluator — two-level DNF
+ * (ADR-015): a flag matches if any group matches; a group matches if all its
+ * conditions match.
+ */
+export interface RuleGroup {
+  conditions: Rule[];
+}
+
 export interface Flag {
   enabled: boolean;
   rollout_pct: number;
   flag_type: 'boolean' | 'string' | 'number' | 'json';
   default_value: any;
-  rules: Rule[];
+  rules: RuleGroup[];
 }
 
 export interface FlagConfig {

@@ -1,4 +1,5 @@
 import { FlagCache } from './cache';
+import { toRuleGroups } from './evaluator';
 import type { FlagConfig } from './types';
 
 export class SyncWorker {
@@ -43,15 +44,28 @@ export class SyncWorker {
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      const data: FlagConfig = await response.json();
+      const raw = await response.json();
 
       // Skip update if version hasn't changed
       const currentVersion = this.cache.getVersion();
-      if (currentVersion && data.version === currentVersion) {
+      if (currentVersion && raw.version === currentVersion) {
         return;
       }
 
-      this.cache.setConfig(data);
+      // Normalise targeting into the canonical two-level DNF shape (also
+      // accepts legacy flat configs), so cached flags + getAllFlags are
+      // consistent and the evaluator never has to branch on shape.
+      const config: FlagConfig = {
+        version: raw.version,
+        flags: Object.fromEntries(
+          Object.entries(raw.flags ?? {}).map(([key, flag]: [string, any]) => [
+            key,
+            { ...flag, rules: toRuleGroups(flag.rules) },
+          ]),
+        ),
+      };
+
+      this.cache.setConfig(config);
       // Notify subscribers (e.g. React hooks) that a new config is live.
       this.onUpdate?.();
     } catch (error) {

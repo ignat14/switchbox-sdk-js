@@ -1,9 +1,33 @@
 import { rolloutBucket } from './hash';
-import type { Flag, Rule, UserContext } from './types';
+import type { Flag, Rule, RuleGroup, UserContext } from './types';
 
 export function enabledValue(flag: Flag): any {
   if (flag.flag_type === 'boolean') return true;
   return flag.default_value;
+}
+
+/**
+ * Normalise a flag's rules into RuleGroups. Accepts the two-level shape
+ * (`{conditions: [...]}`) and the legacy flat shape (`{attribute, operator,
+ * value}` — a pre-DNF config), wrapping each flat condition as a single-
+ * condition group. Idempotent, so it's safe to call on already-normalised
+ * config. See ADR-015.
+ */
+export function toRuleGroups(rules: any): RuleGroup[] {
+  if (!Array.isArray(rules)) return [];
+  return rules.map((r) =>
+    r && Array.isArray(r.conditions)
+      ? { conditions: r.conditions }
+      : { conditions: [r] },
+  );
+}
+
+function matchGroup(group: RuleGroup, userContext: UserContext): boolean {
+  // AND: every condition must match. An empty group matches no one.
+  return (
+    group.conditions.length > 0 &&
+    group.conditions.every((c) => matchRule(c, userContext))
+  );
 }
 
 export function matchRule(rule: Rule, userContext: UserContext): boolean {
@@ -53,12 +77,11 @@ export async function evaluate(
       : flag.default_value;
   }
 
-  // 3. Rules match (OR logic — any match wins) → return enabledValue
-  if (flag.rules.length > 0) {
-    for (const rule of flag.rules) {
-      if (matchRule(rule, userContext)) {
-        return enabledValue(flag);
-      }
+  // 3. Rule groups: OR across groups, AND within a group (two-level DNF).
+  //    Any matching group wins.
+  for (const group of toRuleGroups(flag.rules)) {
+    if (matchGroup(group, userContext)) {
+      return enabledValue(flag);
     }
   }
 
