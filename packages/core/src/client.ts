@@ -9,6 +9,7 @@ export class Client {
   private cache: FlagCache;
   private sync: SyncWorker;
   private onEvaluation?: SwitchboxOptions['onEvaluation'];
+  private listeners = new Set<() => void>();
 
   constructor(options: SwitchboxOptions) {
     this.cache = new FlagCache();
@@ -20,6 +21,7 @@ export class Client {
       this.cache,
       options.pollInterval ?? 30,
       options.onError,
+      () => this.notifyConfigChange(),
     );
   }
 
@@ -27,15 +29,42 @@ export class Client {
     await this.sync.start();
   }
 
-  async enabled(flagKey: string, user?: UserContext): Promise<boolean> {
+  /**
+   * Subscribe to config updates. The callback fires whenever the polled config
+   * version changes. Returns an unsubscribe function.
+   *
+   * The React hooks subscribe through this so mounted components re-evaluate
+   * when a new config arrives — without it, hook values stay frozen at mount
+   * even though the cache keeps refreshing (SEC-3).
+   */
+  onConfigChange(callback: () => void): () => void {
+    this.listeners.add(callback);
+    return () => {
+      this.listeners.delete(callback);
+    };
+  }
+
+  private notifyConfigChange(): void {
+    for (const listener of this.listeners) listener();
+  }
+
+  /**
+   * Shared eval path: look up the flag, evaluate (or use `fallback` when absent),
+   * fire the onEvaluation hook, return the result.
+   */
+  private async evalFlag(
+    flagKey: string,
+    user: UserContext | undefined,
+    fallback: any,
+  ): Promise<any> {
     const flag = this.cache.getFlag(flagKey);
-    if (!flag) {
-      this.onEvaluation?.(flagKey, false, user);
-      return false;
-    }
-    const result = await evaluate(flag, flagKey, user);
+    const result = flag ? await evaluate(flag, flagKey, user) : fallback;
     this.onEvaluation?.(flagKey, result, user);
-    return Boolean(result);
+    return result;
+  }
+
+  async enabled(flagKey: string, user?: UserContext): Promise<boolean> {
+    return Boolean(await this.evalFlag(flagKey, user, false));
   }
 
   async getValue(
@@ -43,14 +72,7 @@ export class Client {
     user?: UserContext,
     defaultValue?: any,
   ): Promise<any> {
-    const flag = this.cache.getFlag(flagKey);
-    if (!flag) {
-      this.onEvaluation?.(flagKey, defaultValue, user);
-      return defaultValue;
-    }
-    const result = await evaluate(flag, flagKey, user);
-    this.onEvaluation?.(flagKey, result, user);
-    return result;
+    return this.evalFlag(flagKey, user, defaultValue);
   }
 
   async getAllFlags(user?: UserContext): Promise<Record<string, any>> {
@@ -65,6 +87,7 @@ export class Client {
 
   destroy(): void {
     this.sync.stop();
+    this.listeners.clear();
   }
 }
 

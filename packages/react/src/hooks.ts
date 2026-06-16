@@ -16,11 +16,19 @@ export function useFlag(flagKey: string, user?: UserContext): boolean {
 
   useEffect(() => {
     let mounted = true;
-    client.enabled(flagKey, user).then((result) => {
-      if (mounted) setValue(result);
-    });
+    const reevaluate = () => {
+      client.enabled(flagKey, user).then((result) => {
+        if (mounted) setValue(result);
+      });
+    };
+    reevaluate();
+    // Re-evaluate when a new config arrives, so a flag toggle propagates to
+    // mounted components within one poll interval instead of staying frozen
+    // until remount (SEC-3).
+    const unsubscribe = client.onConfigChange(reevaluate);
     return () => {
       mounted = false;
+      unsubscribe();
     };
   }, [client, flagKey, JSON.stringify(user)]);
 
@@ -37,11 +45,17 @@ export function useValue<T = any>(
 
   useEffect(() => {
     let mounted = true;
-    client.getValue(flagKey, user, defaultValue).then((result) => {
-      if (mounted) setValue(result);
-    });
+    const reevaluate = () => {
+      client.getValue(flagKey, user, defaultValue).then((result) => {
+        if (mounted) setValue(result);
+      });
+    };
+    reevaluate();
+    // See useFlag — re-evaluate on config change (SEC-3).
+    const unsubscribe = client.onConfigChange(reevaluate);
     return () => {
       mounted = false;
+      unsubscribe();
     };
   }, [client, flagKey, JSON.stringify(user), defaultValue]);
 

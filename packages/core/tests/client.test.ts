@@ -92,6 +92,27 @@ describe('Client', () => {
     client.destroy();
   });
 
+  it('onConfigChange fires when a config version arrives (SEC-3)', async () => {
+    globalThis.fetch = mockFetch(sampleConfig);
+    const client = new Client({ sdkKey: 'test-key' });
+    const listener = vi.fn();
+    client.onConfigChange(listener);
+    await client.init(); // first config load → notify subscribers
+    expect(listener).toHaveBeenCalledTimes(1);
+    client.destroy();
+  });
+
+  it('onConfigChange unsubscribe stops notifications', async () => {
+    globalThis.fetch = mockFetch(sampleConfig);
+    const client = new Client({ sdkKey: 'test-key' });
+    const listener = vi.fn();
+    const off = client.onConfigChange(listener);
+    off();
+    await client.init();
+    expect(listener).not.toHaveBeenCalled();
+    client.destroy();
+  });
+
   it('destroy stops polling', async () => {
     globalThis.fetch = mockFetch(sampleConfig);
     const clearIntervalSpy = vi.spyOn(globalThis, 'clearInterval');

@@ -11,6 +11,7 @@ function createMockClient(overrides: Partial<Client> = {}): Client {
     enabled: vi.fn().mockResolvedValue(false),
     getValue: vi.fn().mockResolvedValue(undefined),
     getAllFlags: vi.fn().mockResolvedValue({}),
+    onConfigChange: vi.fn().mockReturnValue(() => {}),
     destroy: vi.fn(),
     ...overrides,
   } as unknown as Client;
@@ -81,6 +82,55 @@ describe('useFlag', () => {
     await waitFor(() => {
       expect(enabledFn).toHaveBeenCalledTimes(2);
     });
+  });
+
+  it('re-evaluates when the config changes (SEC-3)', async () => {
+    // Capture the listener the hook registers, then fire it to simulate a new
+    // config landing — the mounted hook must pick up the new value.
+    let fireConfigChange: () => void = () => {};
+    const enabledFn = vi
+      .fn()
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true);
+    const client = createMockClient({
+      enabled: enabledFn,
+      onConfigChange: vi.fn().mockImplementation((cb: () => void) => {
+        fireConfigChange = cb;
+        return () => {};
+      }),
+    });
+
+    const { result } = renderHook(() => useFlag('test_flag'), {
+      wrapper: createWrapper(client),
+    });
+
+    await waitFor(() => {
+      expect(result.current).toBe(false);
+    });
+
+    // A poll brings a new config version → SyncWorker fires onUpdate → listener.
+    act(() => {
+      fireConfigChange();
+    });
+
+    await waitFor(() => {
+      expect(result.current).toBe(true);
+    });
+  });
+
+  it('unsubscribes from config changes on unmount', async () => {
+    const unsubscribe = vi.fn();
+    const client = createMockClient({
+      onConfigChange: vi.fn().mockReturnValue(unsubscribe),
+    });
+    const { unmount } = renderHook(() => useFlag('test_flag'), {
+      wrapper: createWrapper(client),
+    });
+    await waitFor(() => {
+      expect(client.onConfigChange).toHaveBeenCalled();
+    });
+    unmount();
+    expect(unsubscribe).toHaveBeenCalled();
   });
 });
 

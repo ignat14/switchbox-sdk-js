@@ -11,6 +11,7 @@ function createMockClient(overrides: Partial<Client> = {}): Client {
     enabled: vi.fn().mockResolvedValue(false),
     getValue: vi.fn().mockResolvedValue(undefined),
     getAllFlags: vi.fn().mockResolvedValue({}),
+    onConfigChange: vi.fn().mockReturnValue(() => {}),
     destroy: vi.fn(),
     ...overrides,
   } as unknown as Client;

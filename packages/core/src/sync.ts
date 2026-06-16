@@ -6,6 +6,7 @@ export class SyncWorker {
   private cache: FlagCache;
   private interval: number;
   private onError?: (error: Error) => void;
+  private onUpdate?: () => void;
   private timer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
@@ -13,11 +14,13 @@ export class SyncWorker {
     cache: FlagCache,
     interval: number,
     onError?: (error: Error) => void,
+    onUpdate?: () => void,
   ) {
     this.cdnUrl = cdnUrl;
     this.cache = cache;
     this.interval = interval;
     this.onError = onError;
+    this.onUpdate = onUpdate;
   }
 
   async start(): Promise<void> {
@@ -49,6 +52,8 @@ export class SyncWorker {
       }
 
       this.cache.setConfig(data);
+      // Notify subscribers (e.g. React hooks) that a new config is live.
+      this.onUpdate?.();
     } catch (error) {
       if (this.onError) {
         this.onError(
