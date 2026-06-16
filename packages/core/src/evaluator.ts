@@ -62,15 +62,15 @@ export async function evaluate(
     }
   }
 
-  // 4. Rollout % → hash(user_id + ":" + flag_key) % 100 < rollout_pct
+  // 4. Rollout %. Resolve the id with ?? (null-only): an empty-string user_id
+  //    is a real id, not "missing".
   const userId = userContext.user_id ?? userContext.id;
-  if (userId !== undefined) {
+  if (userId !== undefined && userId !== null) {
     const bucket = await rolloutBucket(String(userId), flagKey);
-    if (bucket < flag.rollout_pct) {
-      return enabledValue(flag);
-    }
+    return bucket < flag.rollout_pct ? enabledValue(flag) : flag.default_value;
   }
 
-  // 5. Nothing matched → return default_value
-  return flag.default_value;
+  // 5. No usable id to hash → only a full (100%) rollout reaches everyone,
+  //    matching the no-user-context branch above (ADR-008 / parity with Python).
+  return flag.rollout_pct === 100 ? enabledValue(flag) : flag.default_value;
 }
