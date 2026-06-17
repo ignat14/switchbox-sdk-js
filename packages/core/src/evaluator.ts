@@ -3,7 +3,9 @@ import type { Flag, Rule, RuleGroup, UserContext } from './types';
 
 export function enabledValue(flag: Flag): any {
   if (flag.flag_type === 'boolean') return true;
-  return flag.default_value;
+  // Non-boolean: serve enabled_value (variations, ADR-017), falling back to
+  // default_value when unset — so configs without it behave as before.
+  return flag.enabled_value ?? flag.default_value;
 }
 
 /**

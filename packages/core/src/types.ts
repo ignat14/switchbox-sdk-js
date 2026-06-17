@@ -25,6 +25,12 @@ export interface Flag {
   rollout_pct: number;
   flag_type: 'boolean' | 'string' | 'number' | 'json';
   default_value: any;
+  /**
+   * The "on"/matched value for non-boolean flags (variations, ADR-017). Absent
+   * ⇒ falls back to `default_value`, so configs without it behave as before.
+   * Boolean flags ignore it.
+   */
+  enabled_value?: any;
   rules: RuleGroup[];
 }
 
