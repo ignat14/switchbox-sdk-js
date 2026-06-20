@@ -1,17 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
 import { matchRule, evaluate } from '../src/evaluator';
+import { rolloutBucket } from '../src/hash';
 import type { Flag, Rule, UserContext } from '../src/types';
-
-// Shared with switchbox-sdk-python/tests/parity_vectors.json — byte-identical.
-// Both SDKs run the same vectors so they evaluate identical inputs identically
-// (SEC-4). See the sdk-parity skill and DECISIONS.md ADR-013.
-const here = dirname(fileURLToPath(import.meta.url));
-const vectors = JSON.parse(
-  readFileSync(join(here, 'parity_vectors.json'), 'utf-8'),
-);
+// Canonical fixtures/parity/parity_vectors.json (workspace root), synced into this
+// repo by `python3 fixtures/sync.py`; the Python suite runs the same bytes. Both
+// SDKs must evaluate identical inputs identically (SEC-4). Edit the canonical and
+// re-sync — never hand-edit this copy. See DECISIONS.md ADR-013 + ADR-024.
+import vectors from './fixtures/parity/parity_vectors.json';
 
 describe('SEC-4 rule_match parity vectors', () => {
   for (const c of vectors.rule_match) {
@@ -32,6 +27,17 @@ describe('SEC-4 evaluate parity vectors', () => {
         c.user ?? undefined,
       );
       expect(result).toBe(c.expected);
+    });
+  }
+});
+
+describe('SEC-4 rollout_bucket parity vectors', () => {
+  for (const c of vectors.rollout_bucket) {
+    it(c.name, async () => {
+      // The rollout hash itself: sha256(`${user_id}:${flag_key}`) % 100. The
+      // Python suite asserts the same values (it recovers the bucket via
+      // _check_rollout's boundary, since it has no public bucket accessor).
+      expect(await rolloutBucket(c.user_id, c.flag_key)).toBe(c.expected);
     });
   }
 });

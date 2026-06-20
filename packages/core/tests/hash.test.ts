@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sha256Hex, rolloutBucket } from '../src/hash';
+import { sha256Hex } from '../src/hash';
 
 describe('sha256Hex', () => {
   it('produces correct hex for known inputs', async () => {
@@ -12,17 +12,7 @@ describe('sha256Hex', () => {
   });
 });
 
-describe('rolloutBucket — cross-SDK compatibility', () => {
-  // These values are pre-computed from the Python SDK to guarantee identical results
-  it('rolloutBucket("42", "new_checkout") matches Python SDK', async () => {
-    expect(await rolloutBucket('42', 'new_checkout')).toBe(98);
-  });
-
-  it('rolloutBucket("user_100", "feature_x") matches Python SDK', async () => {
-    expect(await rolloutBucket('user_100', 'feature_x')).toBe(4);
-  });
-
-  it('rolloutBucket("abc", "search_version") matches Python SDK', async () => {
-    expect(await rolloutBucket('abc', 'search_version')).toBe(10);
-  });
-});
+// Cross-SDK rolloutBucket parity (the 42/user_100/abc values that used to live
+// here) now lives in the shared parity vectors' `rollout_bucket` section — run by
+// BOTH SDKs, so the pin is genuinely cross-language. See parity.test.ts +
+// fixtures/parity/parity_vectors.json.
