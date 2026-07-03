@@ -33,7 +33,10 @@ function matchGroup(group: RuleGroup, userContext: UserContext): boolean {
 }
 
 export function matchRule(rule: Rule, userContext: UserContext): boolean {
-  if (!(rule.attribute in userContext)) return false;
+  // Own properties only: `in` walks the prototype chain, so a rule on an
+  // attribute like "constructor" would match every context object here while
+  // matching no one in Python (dicts have no prototype). Parity-pinned.
+  if (!Object.hasOwn(userContext, rule.attribute)) return false;
   const contextValue = userContext[rule.attribute];
 
   switch (rule.operator) {
@@ -62,7 +65,29 @@ export function matchRule(rule: Rule, userContext: UserContext): boolean {
   }
 }
 
+/**
+ * Evaluate a flag for a user context. **Never throws** (ADR-043): any error —
+ * a malformed rule from the CDN, a hashing failure (e.g. Web Crypto absent in
+ * an insecure context) — degrades to `default_value`, exactly like the Python
+ * SDK's evaluator-level catch. Pass `onError` to observe contained errors
+ * (the client wires its own `onError` option through); the evaluator itself
+ * stays pure — no logging, no I/O.
+ */
 export async function evaluate(
+  flag: Flag,
+  flagKey: string,
+  userContext?: UserContext,
+  onError?: (error: Error) => void,
+): Promise<any> {
+  try {
+    return await evaluateOrThrow(flag, flagKey, userContext);
+  } catch (error) {
+    onError?.(error instanceof Error ? error : new Error(String(error)));
+    return flag.default_value;
+  }
+}
+
+async function evaluateOrThrow(
   flag: Flag,
   flagKey: string,
   userContext?: UserContext,
@@ -72,7 +97,9 @@ export async function evaluate(
     return flag.default_value;
   }
 
-  // 2. No user context → if rollout_pct == 100 return enabledValue, else default_value
+  // 2. No user context (null/undefined only — an empty object {} deliberately
+  //    proceeds to the rules loop and behaves like "no matching attributes";
+  //    parity-pinned) → if rollout_pct == 100 return enabledValue, else default_value
   if (!userContext) {
     return flag.rollout_pct === 100
       ? enabledValue(flag)

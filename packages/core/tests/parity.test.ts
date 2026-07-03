@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { matchRule, evaluate } from '../src/evaluator';
 import { rolloutBucket } from '../src/hash';
+import { normalizeConfig } from '../src/sync';
 import type { Flag, Rule, UserContext } from '../src/types';
 // Canonical fixtures/parity/parity_vectors.json (workspace root), synced into this
 // repo by `python3 fixtures/sync.py`; the Python suite runs the same bytes. Both
@@ -18,11 +19,22 @@ describe('SEC-4 rule_match parity vectors', () => {
   }
 });
 
+/**
+ * Build the Flag through the REAL parse path (`normalizeConfig`, the same
+ * function SyncWorker feeds the cache from) — mirroring the Python runner's
+ * `FlagConfig.from_dict`. Raw vector dicts would skip the normalization layer
+ * (omitted-field defaults, DNF wrapping), leaving it untested.
+ */
+function flagFrom(c: any): Flag {
+  return normalizeConfig({ version: 'v', flags: { [c.flag_key]: c.flag } })
+    .flags[c.flag_key];
+}
+
 describe('SEC-4 evaluate parity vectors', () => {
   for (const c of vectors.evaluate) {
     it(c.name, async () => {
       const result = await evaluate(
-        c.flag as Flag,
+        flagFrom(c),
         c.flag_key,
         c.user ?? undefined,
       );

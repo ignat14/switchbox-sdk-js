@@ -44,4 +44,11 @@ describe('FlagCache', () => {
     cache.setConfig(sampleConfig);
     expect(cache.getFlag('nonexistent')).toBeNull();
   });
+
+  it('getFlag does not resolve prototype-chain keys ("constructor" is a valid flag key)', () => {
+    const cache = new FlagCache();
+    cache.setConfig(sampleConfig);
+    expect(cache.getFlag('constructor')).toBeNull();
+    expect(cache.getFlag('toString')).toBeNull();
+  });
 });

@@ -9,6 +9,7 @@ export class Switchbox {
   private cache: FlagCache;
   private sync: SyncWorker;
   private onEvaluation?: SwitchboxOptions['onEvaluation'];
+  private onError?: SwitchboxOptions['onError'];
   private listeners = new Set<() => void>();
 
   /**
@@ -29,6 +30,7 @@ export class Switchbox {
   constructor(options: SwitchboxOptions) {
     this.cache = new FlagCache();
     this.onEvaluation = options.onEvaluation;
+    this.onError = options.onError;
     const base = options.cdnBaseUrl ?? DEFAULT_CDN_BASE_URL;
     const cdnUrl = `${base}/${options.sdkKey}/flags.json`;
     this.sync = new SyncWorker(
@@ -73,7 +75,11 @@ export class Switchbox {
     fallback: any,
   ): Promise<any> {
     const flag = this.cache.getFlag(flagKey);
-    const result = flag ? await evaluate(flag, flagKey, user) : fallback;
+    // evaluate never throws (ADR-043) — a malformed rule degrades to the
+    // flag's default_value and reports through onError.
+    const result = flag
+      ? await evaluate(flag, flagKey, user, this.onError)
+      : fallback;
     this.onEvaluation?.(flagKey, result, user);
     return result;
   }
@@ -95,7 +101,7 @@ export class Switchbox {
     if (!config) return {};
     const results: Record<string, any> = {};
     for (const [key, flag] of Object.entries(config.flags)) {
-      results[key] = await evaluate(flag, key, user);
+      results[key] = await evaluate(flag, key, user, this.onError);
     }
     return results;
   }

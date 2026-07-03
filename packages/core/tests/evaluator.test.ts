@@ -20,6 +20,37 @@ describe('evaluate', () => {
     expect(await evaluate(flag, 'test', { user_id: '1' })).toBe('off');
   });
 
+  it('never throws: a malformed rule degrades to default_value and reports via onError (ADR-043)', async () => {
+    const errors: Error[] = [];
+    const flag = makeFlag({
+      rollout_pct: 0,
+      default_value: 'safe',
+      // in_list with a null value → `.includes` on null throws a TypeError
+      rules: [
+        { conditions: [{ attribute: 'x', operator: 'in_list', value: null }] },
+      ] as any,
+    });
+    const result = await evaluate(flag, 'test', { x: 'a', user_id: 'u1' }, (e) =>
+      errors.push(e),
+    );
+    expect(result).toBe('safe');
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toBeInstanceOf(Error);
+  });
+
+  it('never throws: containment holds without an onError callback', async () => {
+    const flag = makeFlag({
+      rollout_pct: 0,
+      default_value: false,
+      rules: [
+        { conditions: [{ attribute: 'x', operator: 'in_list', value: null }] },
+      ] as any,
+    });
+    await expect(
+      evaluate(flag, 'test', { x: 'a' }),
+    ).resolves.toBe(false);
+  });
+
   it('enabled flag with 100% rollout returns true', async () => {
     const flag = makeFlag({ rollout_pct: 100 });
     expect(await evaluate(flag, 'test', { user_id: '1' })).toBe(true);
