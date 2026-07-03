@@ -7,6 +7,32 @@ on:
     branches: [main]
 
 jobs:
+  # Cross-repo shared-fixture drift guard (ADR-024 / FABLE_IMPROVEMENTS 3.1).
+  # The canonical fixtures live in the (private) workspace repo, so repo CI
+  # can't diff against them — but the load-bearing invariant is that the
+  # *copies agree across the consuming repos* (else the two SDK suites pin
+  # divergent behavior). switchbox-sdk-python is public, so its copies are
+  # fetchable with no token. Expect a transient red here mid-propagation of a
+  # legit fixture change: push both SDK repos, then re-run.
+  fixture-drift:
+    name: Fixture drift vs switchbox-sdk-python
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Compare shared fixture copies
+        run: |
+          set -euo pipefail
+          base="https://raw.githubusercontent.com/ignat14/switchbox-sdk-python/main/tests/fixtures"
+          for f in packages/core/tests/fixtures/cdn-json/*.json packages/core/tests/fixtures/parity/*.json; do
+            rel="${f#packages/core/tests/fixtures/}"
+            echo "checking $rel"
+            curl -fsSL "$base/$rel" -o /tmp/sibling.json \
+              || { echo "::error::$rel is missing in switchbox-sdk-python — run fixtures/sync.py (workspace) and push both SDK repos"; exit 1; }
+            cmp -s /tmp/sibling.json "$f" \
+              || { echo "::error::$rel differs from switchbox-sdk-python's copy — shared-fixture drift (ADR-024); run fixtures/sync.py and push both SDK repos"; exit 1; }
+          done
+          echo "shared fixtures in sync with switchbox-sdk-python"
+
   test:
     runs-on: ubuntu-latest
     steps:
