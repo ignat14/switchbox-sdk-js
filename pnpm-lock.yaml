@@ -30,6 +30,39 @@ importers:
         specifier: ^5.4.0
         version: 5.9.3
 
+  packages/openfeature:
+    devDependencies:
+      '@openfeature/react-sdk':
+        specifier: ^1.4.1
+        version: 1.4.1(@openfeature/web-sdk@1.9.0(@openfeature/core@1.11.0))(react@18.3.1)
+      '@openfeature/web-sdk':
+        specifier: ^1.9.0
+        version: 1.9.0(@openfeature/core@1.11.0)
+      '@testing-library/react':
+        specifier: ^16.0.0
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@types/react':
+        specifier: ^18.0.0
+        version: 18.3.28
+      '@types/react-dom':
+        specifier: ^18.0.0
+        version: 18.3.7(@types/react@18.3.28)
+      react:
+        specifier: ^18.0.0
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.0.0
+        version: 18.3.1(react@18.3.1)
+      switchbox-js:
+        specifier: workspace:*
+        version: link:../core
+      tsup:
+        specifier: ^8.0.0
+        version: 8.5.1(postcss@8.5.8)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.4.0
+        version: 5.9.3
+
   packages/react:
     devDependencies:
       '@testing-library/react':
@@ -296,6 +329,20 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
+
+  '@openfeature/core@1.11.0':
+    resolution: {integrity: sha512-P0u3/ht/oZCQT89fOed+laLk0kZR529a825cS02uPDglxXbE97irWYpDAeRGGVETIzKfuy+H2g8c3Ccv/tXJNQ==}
+
+  '@openfeature/react-sdk@1.4.1':
+    resolution: {integrity: sha512-xKpXBXVT0w9CIrhl6IzGkIuxmsqy7At+eYUW1XtaZbk+odKW424ZnmmjqiQMrbu31pfAhQrzww36QokTQaIf7g==}
+    peerDependencies:
+      '@openfeature/web-sdk': ^1.9.0
+      react: '>=16.8.0'
+
+  '@openfeature/web-sdk@1.9.0':
+    resolution: {integrity: sha512-FCrNfqvE/thHVfCNU0KKx1SD7rk+1wE2UaR5B5OPZl917QJv6AsKRwaI3N+SVgwXWI07GgtXP6hNlTVb49PGhg==}
+    peerDependencies:
+      '@openfeature/core': ^1.11.0
 
   '@rollup/rollup-android-arm-eabi@4.59.0':
     resolution: {integrity: sha512-upnNBkA6ZH2VKGcBj9Fyl9IGNPULcjXRlg0LLeaioQWueH30p6IXtJEbKAgvyv+mJaMxSm1l6xwDXYjpEMiLMg==}
@@ -1179,6 +1226,17 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
+
+  '@openfeature/core@1.11.0': {}
+
+  '@openfeature/react-sdk@1.4.1(@openfeature/web-sdk@1.9.0(@openfeature/core@1.11.0))(react@18.3.1)':
+    dependencies:
+      '@openfeature/web-sdk': 1.9.0(@openfeature/core@1.11.0)
+      react: 18.3.1
+
+  '@openfeature/web-sdk@1.9.0(@openfeature/core@1.11.0)':
+    dependencies:
+      '@openfeature/core': 1.11.0
 
   '@rollup/rollup-android-arm-eabi@4.59.0':
     optional: true

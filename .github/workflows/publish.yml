@@ -36,3 +36,8 @@ jobs:
         run: pnpm --filter @switchbox/react publish --no-git-checks --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @switchbox/openfeature
+        run: pnpm --filter @switchbox/openfeature publish --no-git-checks --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

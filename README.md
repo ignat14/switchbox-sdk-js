@@ -2,12 +2,13 @@
 
 Feature flags served from a CDN. Zero dependencies. Sub-millisecond evaluation.
 
-This is the pnpm workspace for the two published JavaScript packages. **The full docs live in each package's README** (the canonical reference — also what npm shows):
+This is the pnpm workspace for the published JavaScript packages. **The full docs live in each package's README** (the canonical reference — also what npm shows):
 
 | Package | Description | Install | Docs |
 |---------|-------------|---------|------|
 | [`switchbox-js`](./packages/core) | Core browser SDK | `npm install switchbox-js` | [README](./packages/core/README.md) · [npm](https://www.npmjs.com/package/switchbox-js) |
 | [`@switchbox/react`](./packages/react) | React hooks & components | `npm install switchbox-js @switchbox/react` | [README](./packages/react/README.md) · [npm](https://www.npmjs.com/package/@switchbox/react) |
+| [`@switchbox/openfeature`](./packages/openfeature) | OpenFeature web provider | `npm install @openfeature/web-sdk switchbox-js @switchbox/openfeature` | [README](./packages/openfeature/README.md) · [npm](https://www.npmjs.com/package/@switchbox/openfeature) |
 
 ## At a glance
 
@@ -43,7 +44,7 @@ pnpm test          # vitest at the workspace root
 pnpm -r lint       # tsc --noEmit per package
 ```
 
-Publishing is tag-driven: bump both `package.json` versions, then `git tag v0.x.x && git push --tags` (CI builds, tests, and publishes both packages to npm).
+Publishing is tag-driven: bump all three `package.json` versions, then `git tag v0.x.x && git push --tags` (CI builds, tests, and publishes every package to npm).
 
 ## License
 
