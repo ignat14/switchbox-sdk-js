@@ -39,7 +39,7 @@ client.destroy();
 - **CDN-first** — fetches flag configs from static JSON on a CDN, served from the edge, never from our API
 - **Zero dependencies** — browser APIs only (`fetch`, Web Crypto); `npm install switchbox-js` pulls in nothing else
 - **Sub-millisecond evaluation** — rules and rollouts evaluated locally in the browser, no network call per flag check
-- **Background polling** — syncs configs every 30 seconds (configurable)
+- **Background polling** — syncs configs every 10 seconds (configurable)
 - **Offline resilient** — keeps working on the last fetched config if the CDN is unreachable
 - **Live updates** — subscribe to config changes so a flag toggle reaches your UI within one poll interval
 - **Tiny** — a few KB, tree-shakeable ESM
@@ -146,7 +146,7 @@ const unsubscribe = client.onConfigChange(() => {
 
 ### Analytics / exposure tracking
 
-Switchbox doesn't track flag evaluations. Wire evaluations into your own analytics with `onEvaluation`:
+Wire evaluations into your own analytics with `onEvaluation` — it fires after every evaluation with the flag key, the resolved value, and the user context. An exception inside your handler never breaks the flag check; it is reported through `onError`:
 
 ```js
 const client = await Switchbox.create({
@@ -157,15 +157,22 @@ const client = await Switchbox.create({
 });
 ```
 
+Ready-made handlers for PostHog, Amplitude, Segment, and GA4 are in the [docs recipe](https://switchbox.dev/docs/recipes/measure-in-your-analytics).
+
+### Anonymous usage telemetry
+
+The SDK reports anonymous aggregate usage — per-flag evaluation counts and value distribution, no identity, no user context, no cookies — which powers the dashboard's flag usage panel. On by default; pass `telemetry: false` to disable it. Exactly what is sent and shown: [Connection & usage](https://switchbox.dev/docs/dashboard/monitoring).
+
 ## Configuration
 
 ```js
 const client = await Switchbox.create({
   sdkKey: 'your-sdk-key-from-dashboard', // required — get from the Environments tab
   cdnBaseUrl: 'https://cdn.switchbox.dev', // override the CDN origin (default shown)
-  pollInterval: 30, // seconds between background polls (default: 30)
+  pollInterval: 10, // seconds between background polls (default: 10)
   onError: (error) => console.error(error), // called on fetch/parse errors (default: none)
   onEvaluation: (flagKey, result, user) => {}, // called on every evaluation (default: none)
+  telemetry: true, // anonymous usage telemetry (default: true)
 });
 ```
 
@@ -173,9 +180,10 @@ const client = await Switchbox.create({
 |----------------|---------------------------------------------------|-------------------------------|----------------------------------------------------|
 | `sdkKey`       | `string`                                          | —                             | SDK key from the environment in the dashboard      |
 | `cdnBaseUrl`   | `string`                                          | `https://cdn.switchbox.dev`   | CDN origin; the URL is `{cdnBaseUrl}/{sdkKey}/flags.json` |
-| `pollInterval` | `number`                                          | `30`                          | Seconds between background config refreshes        |
-| `onError`      | `(error: Error) => void`                          | `undefined`                   | Callback invoked when a fetch or parse fails       |
+| `pollInterval` | `number`                                          | `10`                          | Seconds between background config refreshes        |
+| `onError`      | `(error: Error) => void`                          | `undefined`                   | Callback invoked when a fetch or parse fails, or a hook you supplied throws |
 | `onEvaluation` | `(flagKey, result, user?) => void`                | `undefined`                   | Callback invoked on every flag evaluation          |
+| `telemetry`    | `boolean`                                         | `true`                        | Anonymous usage telemetry; `false` disables it     |
 
 ## How It Works
 
@@ -202,7 +210,7 @@ const client = await Switchbox.create({
 
 1. You create and toggle flags in the dashboard
 2. On every change, the API generates a static JSON file and uploads it to the CDN
-3. This SDK polls that JSON file from the edge every 30 seconds
+3. This SDK polls that JSON file from the edge every 10 seconds
 4. Flag evaluation (rules, rollouts) happens locally — no network call per flag check
 
 The API server is only in the write path. All read traffic goes to the CDN.

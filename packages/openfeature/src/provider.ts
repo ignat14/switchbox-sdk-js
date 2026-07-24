@@ -18,7 +18,7 @@ import type { SwitchboxOptions, UserContext } from 'switchbox-js';
  *
  * A pure translation layer over the `switchbox-js` client — it contains zero
  * evaluation logic. Evaluation stays exactly what the SDK does today: poll the
- * CDN every 30s, evaluate rules locally in the browser.
+ * CDN every 10s, evaluate rules locally in the browser.
  *
  * The web SDK's static-context paradigm requires synchronous `resolve*`
  * methods, but the Switchbox client evaluates asynchronously (Web Crypto

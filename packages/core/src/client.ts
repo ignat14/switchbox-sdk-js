@@ -81,7 +81,24 @@ export class Switchbox {
   }
 
   private notifyConfigChange(): void {
-    for (const listener of this.listeners) listener();
+    for (const listener of this.listeners) {
+      try {
+        listener();
+      } catch (error) {
+        // one throwing listener must not starve the others, and its error
+        // must not masquerade as a fetch failure in the sync worker's catch
+        this.reportHookError(error);
+      }
+    }
+  }
+
+  /** Surface a caller-supplied hook's exception through onError (never throw). */
+  private reportHookError(error: unknown): void {
+    try {
+      this.onError?.(error instanceof Error ? error : new Error(String(error)));
+    } catch {
+      // the onError callback itself must never break evaluation
+    }
   }
 
   /**
@@ -102,7 +119,13 @@ export class Switchbox {
     // Record usage telemetry for real evaluations only (not absent-flag
     // fallbacks), matching the Python SDK.
     if (flag && this.telemetry) this.telemetry.record(flagKey, result);
-    this.onEvaluation?.(flagKey, result, user);
+    try {
+      this.onEvaluation?.(flagKey, result, user);
+    } catch (error) {
+      // a caller's hook must never break evaluation (ADR-043) — matches
+      // Python; surfaced through onError so the failure isn't invisible
+      this.reportHookError(error);
+    }
     return result;
   }
 

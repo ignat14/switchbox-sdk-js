@@ -9,7 +9,7 @@
 
 A thin provider that plugs Switchbox into the vendor-neutral [OpenFeature](https://openfeature.dev) API. Your app codes against OpenFeature; Switchbox is one constructor line. Swap vendors by swapping the provider, not your call sites. That is the point: no lock-in.
 
-The provider contains zero evaluation logic. It wraps [switchbox-js](https://www.npmjs.com/package/switchbox-js), which fetches static JSON from a CDN and evaluates rules locally in the browser. Nothing about the architecture changes: same 30 second polling, same local evaluation, same deterministic rollouts.
+The provider contains zero evaluation logic. It wraps [switchbox-js](https://www.npmjs.com/package/switchbox-js), which fetches static JSON from a CDN and evaluates rules locally in the browser. Nothing about the architecture changes: same 10 second polling, same local evaluation, same deterministic rollouts.
 
 ## Install
 

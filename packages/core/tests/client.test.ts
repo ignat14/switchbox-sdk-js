@@ -92,6 +92,40 @@ describe('Switchbox', () => {
     client.destroy();
   });
 
+  it('a throwing onEvaluation hook never breaks evaluation and reports via onError', async () => {
+    globalThis.fetch = mockFetch(sampleConfig);
+    const hookError = new Error('analytics handler blew up');
+    const onEvaluation = vi.fn(() => {
+      throw hookError;
+    });
+    const onError = vi.fn();
+    const client = new Switchbox({ sdkKey: 'test-key', onEvaluation, onError });
+    await client.init();
+
+    expect(await client.enabled('new_dashboard', { user_id: '1' })).toBe(true);
+    expect(await client.getValue('theme', { user_id: '1' })).toBe('dark');
+    expect(onEvaluation).toHaveBeenCalledTimes(2);
+    expect(onError).toHaveBeenCalledWith(hookError);
+    client.destroy();
+  });
+
+  it('a throwing onConfigChange listener does not starve later listeners', async () => {
+    globalThis.fetch = mockFetch(sampleConfig);
+    const onError = vi.fn();
+    const client = new Switchbox({ sdkKey: 'test-key', onError });
+    const listenerError = new Error('subscriber blew up');
+    const second = vi.fn();
+    client.onConfigChange(() => {
+      throw listenerError;
+    });
+    client.onConfigChange(second);
+    await client.init(); // first config load notifies subscribers
+
+    expect(second).toHaveBeenCalledTimes(1);
+    expect(onError).toHaveBeenCalledWith(listenerError);
+    client.destroy();
+  });
+
   it('onConfigChange fires when a config version arrives (SEC-3)', async () => {
     globalThis.fetch = mockFetch(sampleConfig);
     const client = new Switchbox({ sdkKey: 'test-key' });
