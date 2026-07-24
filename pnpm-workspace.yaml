@@ -1,5 +1,10 @@
 packages:
   - "packages/*"
 
+allowBuilds:
+  esbuild: set this to true or false
+
+# esbuild ships a native binary and needs its install script to run; recent pnpm
+# blocks build scripts unless the dependency is allowlisted here.
 onlyBuiltDependencies:
   - esbuild

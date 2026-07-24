@@ -1,7 +1,9 @@
 import { FlagCache } from './cache';
 import { evaluate } from './evaluator';
 import { SyncWorker } from './sync';
+import { TelemetryAggregator, TelemetryReporter } from './telemetry';
 import type { SwitchboxOptions, UserContext } from './types';
+import { SDK_NAME, SDK_VERSION } from './version';
 
 const DEFAULT_CDN_BASE_URL = 'https://cdn.switchbox.dev';
 
@@ -10,6 +12,8 @@ export class Switchbox {
   private sync: SyncWorker;
   private onEvaluation?: SwitchboxOptions['onEvaluation'];
   private onError?: SwitchboxOptions['onError'];
+  private telemetry: TelemetryAggregator | null = null;
+  private reporter: TelemetryReporter | null = null;
   private listeners = new Set<() => void>();
 
   /**
@@ -36,10 +40,25 @@ export class Switchbox {
     this.sync = new SyncWorker(
       cdnUrl,
       this.cache,
-      options.pollInterval ?? 30,
+      options.pollInterval ?? 10,
       options.onError,
       () => this.notifyConfigChange(),
     );
+
+    // Anonymous usage telemetry (MEASUREMENT Phase 1 / ADR-055): on by default,
+    // `{ telemetry: false }` opts out. Counts evaluations locally and flushes an
+    // aggregate summary to the CDN worker's ingest route on its own ~60s
+    // cadence. Env key only — never identity/context. Fail-open.
+    if (options.telemetry !== false) {
+      this.telemetry = new TelemetryAggregator();
+      this.reporter = new TelemetryReporter(
+        `${base}/${options.sdkKey}/telemetry`,
+        this.telemetry,
+        SDK_NAME,
+        SDK_VERSION,
+      );
+      this.reporter.start();
+    }
   }
 
   async init(): Promise<void> {
@@ -80,6 +99,9 @@ export class Switchbox {
     const result = flag
       ? await evaluate(flag, flagKey, user, this.onError)
       : fallback;
+    // Record usage telemetry for real evaluations only (not absent-flag
+    // fallbacks), matching the Python SDK.
+    if (flag && this.telemetry) this.telemetry.record(flagKey, result);
     this.onEvaluation?.(flagKey, result, user);
     return result;
   }
@@ -108,6 +130,7 @@ export class Switchbox {
 
   destroy(): void {
     this.sync.stop();
+    this.reporter?.stop(); // final best-effort telemetry flush
     this.listeners.clear();
   }
 }

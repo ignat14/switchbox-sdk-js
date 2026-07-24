@@ -1,6 +1,6 @@
 {
   "name": "@switchbox/openfeature",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "OpenFeature web provider for Switchbox feature flags.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

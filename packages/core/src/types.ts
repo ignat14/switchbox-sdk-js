@@ -53,4 +53,10 @@ export interface SwitchboxOptions {
   pollInterval?: number;
   onError?: (error: Error) => void;
   onEvaluation?: (flagKey: string, result: any, user?: UserContext) => void;
+  /**
+   * Anonymous usage telemetry (MEASUREMENT Phase 1 / ADR-055): aggregate
+   * per-flag evaluation counts flushed to the CDN worker every ~60s. On by
+   * default; set `false` to opt out. Env key only — never identity/context.
+   */
+  telemetry?: boolean;
 }

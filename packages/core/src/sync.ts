@@ -77,8 +77,8 @@ export class SyncWorker {
   private async fetch(): Promise<void> {
     // In-flight guard: interval ticks fire un-awaited, so a poll slower than
     // the interval would otherwise overlap the next one — and the *older*
-    // response could land last, overwriting a newer config (a 30s flag
-    // rollback window). Skipping the tick keeps fetches strictly sequential.
+    // response could land last, overwriting a newer config (a full poll
+    // interval's rollback window). Skipping the tick keeps fetches sequential.
     if (this.inFlight) return;
     this.inFlight = true;
     try {
