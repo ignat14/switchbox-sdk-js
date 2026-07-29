@@ -64,7 +64,11 @@ function serveCdn(initial: ReturnType<typeof config>) {
   globalThis.fetch = vi
     .fn()
     .mockImplementation(() =>
-      Promise.resolve({ ok: true, json: () => Promise.resolve(state.served) }),
+      Promise.resolve({
+        ok: true,
+        headers: new Headers(),
+        json: () => Promise.resolve(state.served),
+      }),
     );
   return state;
 }

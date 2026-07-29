@@ -47,7 +47,11 @@ describe('SEC-3 — playground React page picks up config changes live', () => {
     // The "CDN": serves v1 (flag off), then v2 (flag on) after we flip it.
     let served = configWith(false, 'v1');
     globalThis.fetch = vi.fn().mockImplementation(() =>
-      Promise.resolve({ ok: true, json: () => Promise.resolve(served) }),
+      Promise.resolve({
+        ok: true,
+        headers: new Headers(),
+        json: () => Promise.resolve(served),
+      }),
     );
 
     // Real client, fast poll so the test stays quick (50ms instead of 30s).
@@ -89,7 +93,11 @@ describe('SEC-3 — playground React page picks up config changes live', () => {
   it('stops updating after the client is destroyed (listeners cleared)', async () => {
     let served = configWith(false, 'v1');
     globalThis.fetch = vi.fn().mockImplementation(() =>
-      Promise.resolve({ ok: true, json: () => Promise.resolve(served) }),
+      Promise.resolve({
+        ok: true,
+        headers: new Headers(),
+        json: () => Promise.resolve(served),
+      }),
     );
     const client = new Switchbox({ sdkKey: 'test-key', pollInterval: 0.05 });
     await client.init();

@@ -46,7 +46,11 @@ describe('OpenFeature React SDK + SwitchboxProvider, end to end', () => {
     globalThis.fetch = vi
       .fn()
       .mockImplementation(() =>
-        Promise.resolve({ ok: true, json: () => Promise.resolve(served) }),
+        Promise.resolve({
+          ok: true,
+          headers: new Headers(),
+          json: () => Promise.resolve(served),
+        }),
       );
 
     await OpenFeature.setContext(DOMAIN, { targetingKey: 'user-42' });

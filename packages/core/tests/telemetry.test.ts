@@ -108,7 +108,11 @@ describe('Switchbox telemetry integration', () => {
     },
   };
   const mockFetch = () =>
-    vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(config) });
+    vi.fn().mockResolvedValue({
+      ok: true,
+      headers: new Headers(),
+      json: () => Promise.resolve(config),
+    });
 
   beforeEach(() => vi.restoreAllMocks());
 

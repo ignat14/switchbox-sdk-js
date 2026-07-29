@@ -45,6 +45,9 @@ export class SyncWorker {
   private onUpdate?: () => void;
   private timer: ReturnType<typeof setInterval> | null = null;
   private inFlight = false;
+  // Last ETag the CDN gave us, echoed back as If-None-Match (REF-8). Polls are
+  // serialised by the in-flight guard below, so a single field is enough.
+  private etag: string | null = null;
 
   constructor(
     cdnUrl: string,
@@ -82,17 +85,38 @@ export class SyncWorker {
     if (this.inFlight) return;
     this.inFlight = true;
     try {
+      // Conditional fetch (REF-8): once we hold a config, ask the CDN to answer
+      // 304-with-no-body unless it actually changed, so steady-state polling
+      // costs the browser no payload. `If-None-Match` isn't CORS-safelisted, so
+      // this makes the poll preflighted — the Worker answers OPTIONS with a
+      // long Access-Control-Max-Age, so it's one preflight per browser, not one
+      // per poll. Degrades to a plain 200 on a CDN that sends no ETag.
+      const headers: Record<string, string> = {};
+      if (this.etag) headers['If-None-Match'] = this.etag;
       const response = await globalThis.fetch(this.cdnUrl, {
+        headers,
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       });
+      // Unchanged: no body to parse, cache and subscribers untouched. Must come
+      // before the ok check — a 304 is deliberately not `ok`.
+      if (response.status === 304) {
+        return;
+      }
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
+      // Null when the CDN sends no ETag, so we never send a validator it didn't
+      // issue. Committed to `this.etag` only once the config it describes is in
+      // the cache (below): storing it for a body we failed to parse would make
+      // every later poll a 304 we skip — wedging the client on defaults until
+      // the next publish changes the ETag.
+      const etag = response.headers.get('ETag');
       const raw = await response.json();
 
       // Skip update if version hasn't changed
       const currentVersion = this.cache.getVersion();
       if (currentVersion && raw.version === currentVersion) {
+        this.etag = etag;
         return;
       }
 
@@ -100,6 +124,7 @@ export class SyncWorker {
       // malformed flag entries skipped) so cached flags + getAllFlags are
       // consistent and the evaluator never has to branch on shape.
       this.cache.setConfig(normalizeConfig(raw));
+      this.etag = etag;
       // Notify subscribers (e.g. React hooks) that a new config is live.
       this.onUpdate?.();
     } catch (error) {

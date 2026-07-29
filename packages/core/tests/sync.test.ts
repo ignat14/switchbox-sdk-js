@@ -2,11 +2,18 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { FlagCache } from '../src/cache';
 import { SyncWorker, normalizeConfig } from '../src/sync';
 
-function okResponse(body: any): Response {
+function okResponse(body: any, etag?: string): Response {
   return new Response(JSON.stringify(body), {
     status: 200,
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(etag ? { ETag: etag } : {}),
+    },
   });
+}
+
+function notModified(etag: string): Response {
+  return new Response(null, { status: 304, headers: { ETag: etag } });
 }
 
 afterEach(() => {
@@ -70,6 +77,114 @@ describe('SyncWorker fetch behavior', () => {
     worker.stop();
     const init = fetchMock.mock.calls[0][1];
     expect(init?.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it('echoes the CDN ETag back as If-None-Match on the next poll (REF-8)', async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(okResponse({ version: 'v1', flags: {} }, '"abc"'))
+      .mockResolvedValue(notModified('"abc"'));
+
+    const worker = new SyncWorker('http://cdn/x/flags.json', new FlagCache(), 10);
+    await worker.start();
+    // Nothing to validate against on the first fetch.
+    expect(
+      (fetchMock.mock.calls[0][1]?.headers as Record<string, string>)[
+        'If-None-Match'
+      ],
+    ).toBeUndefined();
+
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(
+      (fetchMock.mock.calls[1][1]?.headers as Record<string, string>)[
+        'If-None-Match'
+      ],
+    ).toBe('"abc"');
+    worker.stop();
+  });
+
+  it('treats 304 as unchanged: cache kept, no error, no update callback', async () => {
+    vi.useFakeTimers();
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(okResponse({ version: 'v1', flags: {} }, '"abc"'))
+      .mockResolvedValue(notModified('"abc"'));
+    const onError = vi.fn();
+    const onUpdate = vi.fn();
+
+    const cache = new FlagCache();
+    const worker = new SyncWorker(
+      'http://cdn/x/flags.json',
+      cache,
+      10,
+      onError,
+      onUpdate,
+    );
+    await worker.start(); // the initial 200 caches v1 and notifies once
+    expect(onUpdate).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(cache.getVersion()).toBe('v1');
+    expect(onError).not.toHaveBeenCalled();
+    // The 304 changed nothing, so subscribers are not woken.
+    expect(onUpdate).toHaveBeenCalledTimes(1);
+    worker.stop();
+  });
+
+  it('does not remember the ETag of a body it failed to parse (no permanent-304 wedge)', async () => {
+    vi.useFakeTimers();
+    // A truncated/garbage body: the response is a 200 with an ETag, but the
+    // config never reaches the cache. Sending that validator back would earn a
+    // 304 forever — the client would serve defaults until the next publish.
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response('{"version":', {
+          status: 200,
+          headers: { ETag: '"broken"' },
+        }),
+      )
+      .mockResolvedValue(okResponse({ version: 'v1', flags: {} }, '"abc"'));
+
+    const cache = new FlagCache();
+    const worker = new SyncWorker(
+      'http://cdn/x/flags.json',
+      cache,
+      10,
+      () => {},
+    );
+    await worker.start();
+    expect(cache.getConfig()).toBeNull();
+
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(
+      (fetchMock.mock.calls[1][1]?.headers as Record<string, string>)[
+        'If-None-Match'
+      ],
+    ).toBeUndefined();
+    // …so the retry is a full fetch and the client recovers.
+    expect(cache.getVersion()).toBe('v1');
+    worker.stop();
+  });
+
+  it('forgets the ETag when a CDN stops sending one (no ETag support)', async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(okResponse({ version: 'v1', flags: {} }, '"abc"'))
+      // e.g. failing over to a plain-file CDN that issues no validator
+      .mockResolvedValue(okResponse({ version: 'v2', flags: {} }));
+
+    const worker = new SyncWorker('http://cdn/x/flags.json', new FlagCache(), 10);
+    await worker.start();
+    await vi.advanceTimersByTimeAsync(10_000); // sends If-None-Match, gets 200 without ETag
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(
+      (fetchMock.mock.calls[2][1]?.headers as Record<string, string>)[
+        'If-None-Match'
+      ],
+    ).toBeUndefined();
+    worker.stop();
   });
 
   it('skips interval ticks while a poll is in flight (a slow poll must not overlap a newer one)', async () => {

@@ -25,6 +25,7 @@ const sampleConfig: FlagConfig = {
 function mockFetch(config: FlagConfig) {
   return vi.fn().mockResolvedValue({
     ok: true,
+    headers: new Headers(),
     json: () => Promise.resolve(config),
   });
 }
