@@ -1,10 +1,11 @@
 packages:
   - "packages/*"
 
-allowBuilds:
-  esbuild: set this to true or false
-
 # esbuild ships a native binary and needs its install script to run; recent pnpm
-# blocks build scripts unless the dependency is allowlisted here.
+# blocks build scripts unless the dependency is allowlisted here (pnpm ≥11 reads
+# allowBuilds; onlyBuiltDependencies kept for pnpm 9/10, which CI still pins).
+allowBuilds:
+  esbuild: true
+
 onlyBuiltDependencies:
   - esbuild
