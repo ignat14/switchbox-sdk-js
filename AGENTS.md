@@ -14,7 +14,7 @@ This is a pnpm workspace containing three published packages:
 
 The package READMEs are the canonical public documentation and are also published to npm. Keep them aligned with public API or behavior changes.
 
-## Install, build, and test
+## Install, build, test, and formatting
 
 CI uses Node.js 24 and pnpm 9. From the repository root, run:
 
@@ -26,6 +26,8 @@ pnpm test
 ```
 
 `pnpm build` and `pnpm lint` recurse through all workspace packages. Linting is strict TypeScript checking with `tsc --noEmit`; tests run from the root with Vitest in jsdom. Before handing off a change, run build, lint, and the full test suite when practical.
+
+There is no formatter script or formatter configuration in this repository. Match the existing TypeScript and Markdown style, and do not introduce a formatter as an unrelated change.
 
 ## Runtime and package boundaries
 
@@ -44,18 +46,19 @@ pnpm test
 
 ## Shared fixtures
 
-The JSON under these paths is synchronized with other SDK consumers and should not be hand-edited:
+These JSON files encode cross-SDK contracts and should change only as part of an intentional contract update:
 
 - `packages/core/tests/fixtures/cdn-json/`
 - `packages/core/tests/fixtures/parity/parity_vectors.json`
 - `packages/core/tests/fixtures/telemetry/value_reprs.json`
 
-Make shared-fixture changes in the canonical fixture source, run the external synchronization workflow, and commit the resulting copies in every affected SDK repository. This repository does not contain that synchronization script. CI directly checks the CDN JSON and parity copies against the public Python SDK; temporary drift is expected until both repositories receive a coordinated fixture update.
+`.github/workflows/test.yml` compares the CDN JSON and parity files byte-for-byte with their public `switchbox-sdk-python` copies. Keep those public copies aligned when a shared contract changes. The telemetry fixture is not part of that drift job, but `telemetry.test.ts` and `telemetry.ts` identify it as a cross-SDK value-representation contract. Do not rewrite fixtures merely to make a local implementation pass; update the affected implementation, tests, and public contract copies together.
 
 ## Release-sensitive files
 
 - Releases are tag-driven by `.github/workflows/publish.yml`; ordinary changes must not create or push release tags.
 - Keep the versions in all three `packages/*/package.json` files synchronized for a release. The core version is injected by `packages/core/tsup.config.ts` into telemetry, so package metadata is the source of truth.
+- Preserve the publish order in `.github/workflows/publish.yml`: `switchbox-js`, then `@switchbox/react`, then `@switchbox/openfeature`. The adapter manifests declare `switchbox-js` as a peer dependency.
 - Review package `exports`, `files`, peer dependency ranges, and all `tsup.config.ts` external lists when changing package boundaries or public entry points.
 - Update `pnpm-lock.yaml` whenever dependency metadata changes.
 - Treat package READMEs, shared fixtures, `.github/workflows/test.yml`, and `.github/workflows/publish.yml` as behavior- or release-sensitive; update them deliberately when their associated contract changes.
